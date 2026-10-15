@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adventure 2</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#000;color:white;font-family:Georgia,serif}body{display:grid;place-items:center;overflow:hidden}button{font:inherit;color:inherit}#stage{position:relative;width:100%;height:100%;overflow:hidden;isolation:isolate;background:#000}#room{position:absolute;inset:0;background:url('assets/inside-scene.jpg') center/cover no-repeat;z-index:-1}button.sprite{padding:0;border:0;background:transparent}.sprite{position:absolute;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.sprite img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}button.sprite{cursor:pointer}button:focus-visible{outline:2px solid white;outline-offset:7px;border-radius:8px}#guy{left:10%;top:49%;width:clamp(120px,25vw,330px);aspect-ratio:1423/1387;touch-action:none}#guy.ready{cursor:grab}#guy.dragging{cursor:grabbing;z-index:5}#hat{left:14%;top:20%;width:clamp(90px,17vw,215px);aspect-ratio:1423/1387}#door{right:9%;bottom:13%;height:48%;width:auto;aspect-ratio:450/696;transition:filter .2s}#door.near{filter:drop-shadow(0 0 18px #fff)}#house{left:8%;bottom:21%;height:68%;aspect-ratio:771/1488}#car{left:38%;bottom:8%;width:clamp(230px,49vw,710px);aspect-ratio:728/312;z-index:3}#stage.outside #guy{left:14%;top:auto;bottom:23%;width:clamp(110px,20vw,260px)}.bob img{animation:bob 2.2s ease-in-out infinite}.dragging img{animation:none}.shaking img{animation:shake .11s linear infinite}.driving{animation:drive 1.7s ease-in forwards;pointer-events:none}#hint{position:absolute;bottom:22px;left:20px;right:20px;text-align:center;font:14px/1.5 system-ui,sans-serif;letter-spacing:.07em;text-shadow:0 2px 8px #000;pointer-events:none}#restart{position:absolute;right:20px;top:20px;border:1px solid #ffffff55;border-radius:25px;background:#0008;padding:9px 16px;cursor:pointer;font:12px system-ui;z-index:10}#chapter{position:absolute;left:22px;top:25px;font:11px system-ui;letter-spacing:.2em;text-shadow:0 2px 8px #000;pointer-events:none}[hidden]{display:none!important}@keyframes bob{50%{transform:translateY(-10px)}}@keyframes shake{25%{transform:translate(1px,-2px) rotate(.3deg)}75%{transform:translate(-1px,1px) rotate(-.3deg)}}@keyframes drive{to{transform:translateX(110vw)}}@media(max-width:600px){#guy{left:6%;top:53%}#hat{left:10%;top:32%}#door{right:6%;height:37%;bottom:17%}#house{left:5%;height:58%}#car{left:25%;width:70%;bottom:11%}#hint{font-size:12px}#stage.outside #guy{left:10%;bottom:27%}}@media(prefers-reduced-motion:reduce){.bob img,.shaking img{animation:none}.driving{animation-duration:.2s}}
+</style>
+</head>
+<body>
+<main id="stage" aria-label="Adventure 2 interactive story">
+<div id="room"></div><span id="chapter">01 / THE ROOM</span>
+<img id="house" class="sprite" src="assets/house.png" alt="House" hidden draggable="false">
+<button id="guy" class="sprite" aria-label="Character. Put on the hat first." aria-disabled="true"><img src="assets/diatom-guy.png" alt="Diatom character" draggable="false"></button>
+<button id="hat" class="sprite bob" aria-label="Put on the hat"><img src="assets/hat.png" alt="Hat" draggable="false"></button>
+<img id="door" class="sprite" src="assets/door.png" alt="Door — drag the character here" hidden draggable="false">
+<button id="car" class="sprite" aria-label="Get in the car" hidden><img src="assets/car.png" alt="Car" draggable="false"></button>
+<button id="restart" aria-label="Restart adventure">Restart ↻</button>
+<p id="hint" role="status" aria-live="polite">Click the floating hat.</p>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const stage=$('stage'),guy=$('guy'),hat=$('hat'),door=$('door'),car=$('car'),hint=$('hint');
+let state='hat',drag=null,driveTimer=null;
+for(const name of ['diatom-guy-with-hat.png','car-with-driver.png']){const image=new Image();image.src='assets/'+name;}
+function reset(){clearTimeout(driveTimer);drag=null;state='hat';stage.className='';$('room').hidden=false;$('house').hidden=true;door.hidden=true;door.classList.remove('near');hat.hidden=false;car.hidden=true;car.className='sprite';car.disabled=false;car.querySelector('img').src='assets/car.png';guy.hidden=false;guy.className='sprite';guy.removeAttribute('style');guy.querySelector('img').src='assets/diatom-guy.png';guy.setAttribute('aria-disabled','true');guy.setAttribute('aria-label','Character. Put on the hat first.');$('chapter').textContent='01 / THE ROOM';hint.textContent='Click the floating hat.';}
+hat.addEventListener('click',()=>{if(state!=='hat')return;state='door';hat.hidden=true;guy.querySelector('img').src='assets/diatom-guy-with-hat.png';door.hidden=false;guy.classList.add('ready','bob');guy.setAttribute('aria-disabled','false');guy.setAttribute('aria-label','Drag character to the door, or press Enter to enter.');hint.textContent='Drag your character to the door.';guy.focus({preventScroll:true});});
+function outside(){if(state!=='door')return;state='car';drag=null;stage.className='outside';$('room').hidden=true;door.hidden=true;door.classList.remove('near');$('house').hidden=false;car.hidden=false;guy.className='sprite';guy.removeAttribute('style');guy.setAttribute('aria-disabled','true');guy.setAttribute('aria-label','Character standing in front of the house.');$('chapter').textContent='02 / THE DEPARTURE';hint.textContent='Click the car to begin your journey.';car.focus({preventScroll:true});}
+function atDoor(){const a=guy.getBoundingClientRect(),b=door.getBoundingClientRect();return a.right>b.left&&a.left<b.right&&a.bottom>b.top&&a.top<b.bottom;}
+guy.addEventListener('pointerdown',event=>{if(state!=='door'||event.button!==0)return;const r=guy.getBoundingClientRect(),s=stage.getBoundingClientRect();drag={id:event.pointerId,dx:event.clientX-r.left,dy:event.clientY-r.top,x:r.left-s.left,y:r.top-s.top};guy.setPointerCapture(event.pointerId);guy.classList.add('dragging');event.preventDefault();});
+guy.addEventListener('pointermove',event=>{if(!drag||event.pointerId!==drag.id)return;const s=stage.getBoundingClientRect();guy.style.left=Math.max(0,Math.min(s.width-guy.offsetWidth,event.clientX-s.left-drag.dx))+'px';guy.style.top=Math.max(0,Math.min(s.height-guy.offsetHeight,event.clientY-s.top-drag.dy))+'px';door.classList.toggle('near',atDoor());});
+function endDrag(event){if(!drag||event.pointerId!==drag.id)return;const enter=event.type==='pointerup'&&atDoor();drag=null;guy.classList.remove('dragging');door.classList.remove('near');if(guy.hasPointerCapture(event.pointerId))guy.releasePointerCapture(event.pointerId);if(enter)outside();else guy.removeAttribute('style');}
+guy.addEventListener('pointerup',endDrag);guy.addEventListener('pointercancel',endDrag);guy.addEventListener('lostpointercapture',endDrag);
+guy.addEventListener('keydown',event=>{if(state==='door'&&(event.key==='Enter'||event.key===' ')){event.preventDefault();outside();}});
+car.addEventListener('click',()=>{if(state!=='car')return;state='starting';car.disabled=true;guy.hidden=true;car.querySelector('img').src='assets/car-with-driver.png';car.classList.add('shaking');hint.textContent='Off we go…';driveTimer=setTimeout(()=>{state='driving';car.classList.remove('shaking');car.classList.add('driving');},1000);});
+car.addEventListener('animationend',event=>{if(event.animationName==='drive'&&state==='driving'){state='done';car.hidden=true;hint.textContent='The adventure continues.';}});
+$('restart').addEventListener('click',reset);
+</script>
+</body>
+</html>
